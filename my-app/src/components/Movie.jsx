@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { FaHeart, FaRegHeart } from "react-icons/fa";
 import { MdClose } from "react-icons/md";
 import axios from "axios";
@@ -7,15 +7,26 @@ const Movie = ({ item }) => {
   const [like, setLike] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
   const [recommendations, setRecommendations] = useState([]);
+  const [recommendationsError, setRecommendationsError] = useState(""); 
+  const [isFetching, setIsFetching] = useState(false); 
 
+  // Fetch recommendations only once for a movie
   const fetchRecommendations = async (movieId) => {
+    if (isFetching) return; // Prevent multiple requests while fetching
+
+    setIsFetching(true); // Set flag to prevent other calls
     try {
       const response = await axios.get(
         `http://127.0.0.1:5000/recommend?movie_id=${movieId}`
       );
-      setRecommendations(response.data.recommendations);
+      setRecommendations(response.data.recommendations || []);
+      setRecommendationsError(response.data.error || "");
     } catch (error) {
       console.error("Error fetching recommendations:", error);
+      setRecommendations([]);
+      setRecommendationsError("Server error while fetching recommendations.");
+    } finally {
+      setIsFetching(false); // Reset fetching flag
     }
   };
 
@@ -26,7 +37,7 @@ const Movie = ({ item }) => {
         className="w-[160px] sm:w-[200px] md:w-[240px] lg:w-[280px] inline-block cursor-pointer relative p-2"
         onClick={() => {
           setShowDetails(true);
-          fetchRecommendations(item.id);
+          fetchRecommendations(item.id); // Only fetch when a movie is selected
         }}
       >
         <img
@@ -85,7 +96,7 @@ const Movie = ({ item }) => {
                   {item.overview}
                 </p>
                 <p className="mt-2 text-md text-gray-400">
-                  ⭐ {item.vote_average} | 🎭 {item.genres}
+                  ⭐ {item.vote_average} | 🎭 {item.genres?.map((genre) => genre.name).join(", ")}
                 </p>
               </div>
             </div>
@@ -94,7 +105,9 @@ const Movie = ({ item }) => {
             <div className="mt-6">
               <h3 className="text-lg font-semibold">Recommended Movies</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-2">
-                {recommendations.length > 0 ? (
+                {recommendationsError ? (
+                  <p className="text-gray-400 col-span-full">{recommendationsError}</p>
+                ) : recommendations.length > 0 ? (
                   recommendations.map((movie, index) => (
                     <div key={index} className="text-center">
                       <img
@@ -106,7 +119,7 @@ const Movie = ({ item }) => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-gray-400">No similar movies found.</p>
+                  <p className="text-gray-400 col-span-full">No similar movies found.</p>
                 )}
               </div>
             </div>

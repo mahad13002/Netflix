@@ -7,14 +7,15 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 app = Flask(__name__)
 CORS(app)
 
-# Load the movie dataset with necessary columns
-movies_df = pd.read_csv("tmdb_movies_cleaned.csv", usecols=['id', 'title', 'genres', 'poster_path', 'popularity', 'vote_average'])
+# Load the movie dataset with necessary columns including keywords
+movies_df = pd.read_csv("tmdb_movies_cleaned.csv", usecols=['id', 'title', 'genres', 'keywords', 'poster_path', 'popularity', 'vote_average'])
 
-# Ensure genres are not NaN
+# Ensure genres and keywords are not NaN
 movies_df['genres'] = movies_df['genres'].fillna('')
+movies_df['keywords'] = movies_df['keywords'].fillna('')
 
-# Function to get genre-based recommendations enhanced with popularity & rating
-def get_recommendations(movie_id, num_recommendations=16):
+# Function to get genre-based and keyword-based recommendations enhanced with popularity & rating
+def get_recommendations(movie_id, num_recommendations=12):
     print(f"Received movie_id: {repr(movie_id)}")  
 
     try:
@@ -28,24 +29,30 @@ def get_recommendations(movie_id, num_recommendations=16):
         print(f"Movie ID {movie_id} not found in dataset.")
         return []
 
-    # Extract the genres of the selected movie
+    # Extract the genres and keywords of the selected movie
     selected_genres = set(movie_row.iloc[0]['genres'].split('|'))
+    selected_keywords = set(movie_row.iloc[0]['keywords'].split('|'))
 
-    # Find movies with overlapping genres
-    def genre_similarity(genres):
-        genres_list = set(genres.split('|'))  # Count of matching genres
+    # Function to calculate genre and keyword similarity
+    def calculate_similarity(genres, keywords):
+        genres_list = set(genres.split('|'))
+        keywords_list = set(keywords.split('|'))
+
         matched_genres = len(selected_genres & genres_list)
-        return matched_genres / len(selected_genres) if selected_genres else 0
+        matched_keywords = len(selected_keywords & keywords_list)
+
+        # Combine genre and keyword similarity (weighted or simple sum)
+        return (matched_genres + matched_keywords) / (len(selected_genres) + len(selected_keywords)) if (selected_genres and selected_keywords) else 0
 
     # Compute similarity scores
-    movies_df["similarity"] = movies_df["genres"].apply(genre_similarity)
+    movies_df["similarity"] = movies_df.apply(lambda row: calculate_similarity(row["genres"], row["keywords"]), axis=1)
 
-    # Sort by genre similarity, then popularity, then rating
+    # Sort by similarity, then popularity, then rating
     recommended_movies = (
         movies_df[movies_df["id"] != movie_id]
         .sort_values(by=["similarity", "popularity", "vote_average"], ascending=[False, False, False])
         .head(num_recommendations)
-        [["id", "title", "genres", "poster_path", "popularity", "vote_average"]]
+        [["id", "title", "genres", "keywords", "poster_path", "popularity", "vote_average"]]
     )
 
     # Convert `id` to Python `int` for JSON serialization
@@ -59,15 +66,17 @@ def get_recommendations(movie_id, num_recommendations=16):
 def compute_f1_score(movie_id):
     recommendations = get_recommendations(movie_id)
 
-    # Get ground truth similar movies based on genre
+    # Get ground truth similar movies based on genre and keywords
     movie_row = movies_df[movies_df['id'] == movie_id]
     if movie_row.empty:
         return None
 
     true_genres = set(movie_row.iloc[0]['genres'].split('|'))
+    true_keywords = set(movie_row.iloc[0]['keywords'].split('|'))
 
-    # True movies = Movies that share at least 1 genre with the selected movie
-    true_movies = movies_df[movies_df['genres'].apply(lambda g: len(set(g.split('|')) & true_genres) > 0)]["id"].tolist()
+    # True movies = Movies that share at least 1 genre or keyword with the selected movie
+    true_movies = movies_df[movies_df['genres'].apply(lambda g: len(set(g.split('|')) & true_genres) > 0) | 
+                            movies_df['keywords'].apply(lambda k: len(set(k.split('|')) & true_keywords) > 0)]["id"].tolist()
 
     # Convert to binary format for Precision/Recall/F1 calculation
     true_labels = [1 if movie["id"] in true_movies else 0 for movie in recommendations]
@@ -93,6 +102,12 @@ def recommend():
     movie_id = request.args.get("movie_id", type=int)
     if not movie_id:
         return jsonify({"error": "Movie ID is required"}), 400
+    
+    if movie_id not in movies_df['id'].values:
+        return jsonify({
+            "recommendations": [],
+            "message": "Movie not supported in the backend."
+        }), 200
 
     recommendations = get_recommendations(movie_id)
     return jsonify({"recommendations": recommendations})
