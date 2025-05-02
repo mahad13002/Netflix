@@ -39,7 +39,7 @@ Follow these steps to set up and run the project on your local machine.
    Run the cleaning script from backend directory:
 
    cd backend (if not there already)
-   python cleaning_dataset.python
+   python cleaning_dataset.py
 
    This will clean the dataset so only necessary coloumns are left
    Once cleaned a new file will appear called: tmdb_movies_cleaned.csv
