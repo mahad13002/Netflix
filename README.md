@@ -14,37 +14,41 @@ Follow these steps to set up and run the project on your local machine.
 3. **Run frontend application**:
    npm start
 
-   This will start a development server and open your project in the browser (usually at http://localhost:3000). 
+   This will start a development server and open the project in the browser (usually at http://localhost:3000). 
 
 ### Backend Setup (Flask)
-1. **Install Flask dependencies**:
-   You need to install the required Python packages for the backend:
-   ```bash
-   pip install flask-cors
-   pip install Flask pandas
 
-2. **Create a virtual environemnt to manage the dependencies**:
-   python 3 -m venv venv
+1. **Create a virtual environemnt**:
+   python3 -m venv venv
 
    To activate:
    Mac: source venv/bin/activate
    Windows: venv/Scripts/activate 
 
-3. **Download csv file**:
-    Follow this link: https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies?select=TMDB_movie_dataset_v11.csv 
+2. **Install Python dependencies**:
+   You need to install the required Python packages for the backend:
+
+   pip install Flask flask-cors pandas
+
+3. **Download the dataset file**:
+    Download the dataset from: https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies?select=TMDB_movie_dataset_v11.csv 
     Download the dataset as a zip
-    Once downloaded, unzip the file and place it in the backend folder
+    Once downloaded, unzip the file and place it in the backend directory
 
 4. **Clean the dataset**:
-   Ensure that you are in the backend in the terminal. If not run: cd backend
-   Next run: python cleaning_dataset.py 
-   This will clean the dataset so only necessary coloumns are left.
+   Run the cleaning script from backend directory:
+
+   cd backend (if not there already)
+   python cleaning_dataset.python
+
+   This will clean the dataset so only necessary coloumns are left
    Once cleaned a new file will appear called: tmdb_movies_cleaned.csv
+
    File path is already pre-loaded in the app.py 
 
-5. **Run the flask application**:
-   Navigate to backend if not done already: cd backend
-   run the application: python app.py
+5. **Run the Flask backend server**:
+   cd backend (if not there already)
+   python app.py 
 
 
 **Additional Notes**
