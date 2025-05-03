@@ -28,8 +28,7 @@ Follow these steps to set up and run the project on your local machine.
 2. **Install required dependencies**:
    You need to install the required packages for the backend:
 
-   pip install Flask flask-cors pandas
-   pip install scikit-learn
+   pip install -r requirements.txt
 
 3. **Download the dataset file**:
     Download the dataset from: https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies?select=TMDB_movie_dataset_v11.csv 
